@@ -6,16 +6,10 @@
 docker build -t go-server -f docker/Dockerfile ./http-service
 ```
 
-### To run (using the pre-built image):
+### To run:
 
 ```bash
 docker compose -f docker/compose.yml up -d
-```
-
-### To run (development, builds the image from source):
-
-```bash
-docker compose -f docker/compose.dev.yml up --build -d
 ```
 
 ### Useful PromQL queries

@@ -1,0 +1,21 @@
+services:
+  http-server-projeto-korp:
+    image: go-server
+    container_name: http-server-projeto-korp
+    networks:
+      - korp-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ../nginx-config/:/etc/nginx/conf.d/:ro
+
+    networks:
+      - korp-network
+
+networks:
+  korp-network:
+    driver: bridge

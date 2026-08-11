@@ -1,0 +1,22 @@
+services:
+  http-server-projeto-korp:
+    build:
+      context: ../http-service
+      dockerfile: ../docker/Dockerfile
+    container_name: http-server-projeto-korp
+    networks:
+      - korp-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ../nginx-config/:/etc/nginx/conf.d/:ro
+    networks:
+      - korp-network
+
+networks:
+  korp-network:
+    driver: bridge

@@ -1,0 +1,10 @@
+hcloud_token = "your-hetzner-cloud-api-token"
+
+# Server settings
+server_name = "korp-cx23"
+location    = "fsn1"
+image       = "ubuntu-24.04"
+
+# generate with ./scripts/create-key.sh
+ssh_public_key_path = "../keys/.hetzner.key.pub"
+ssh_key_name = "korp-deploy"

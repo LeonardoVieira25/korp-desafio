@@ -1,0 +1,36 @@
+# --- Terraform ---
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+
+# Keep the example variable file in version control
+!terraform/terraform.tfvars.example
+
+# Override files (usually local-only)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform crash logs
+crash.log
+crash.*.log
+
+# Terraform CLI configuration
+.terraformrc
+terraform.rc
+
+# --- Secrets ---
+.env
+.env.*
+*.pem
+*.key
+*.p12
+id_rsa
+id_ed25519
+keys/
+
+# --- OS ---
+.DS_Store

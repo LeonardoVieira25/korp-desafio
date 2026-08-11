@@ -25,3 +25,18 @@ scrape_configs:
         target_label: instance
       - target_label: __address__
         replacement: blackbox-exporter:9115
+
+  - job_name: blackbox_http_body
+    metrics_path: /probe
+    params:
+      module: [http_2xx_body]
+    static_configs:
+      - targets:
+          - "http://http-server-projeto-korp:8080/projeto-korp"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115

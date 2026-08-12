@@ -30,3 +30,26 @@ avg_over_time(probe_success{job="blackbox_http"}[24h]) * 100
 # HTTP status code seen by the probes
 probe_http_status_code{job="blackbox_http"}
 ```
+
+## Provisionamento
+
+A partir do diretório inicial:
+```bash
+terraform -chdir=./terraform apply
+```
+
+## Execução
+
+A partir do diretório `ansible/`:
+
+```bash
+# 1. Setup: instala o Docker e cria a rede
+ansible-playbook -i inventory.ini playbooks/setup.yml
+
+# 2. Deploy: arquivos + build + containers + validação HTTP
+ansible-playbook -i inventory.ini playbooks/deploy.yml
+```
+
+> As etapas são independentes e leem as variáveis compartilhadas de
+> `group_vars/all.yml`. Você pode reexecutar apenas o deploy, por exemplo,
+> após alterar o `http-service/` ou o `docker/compose.yml`.

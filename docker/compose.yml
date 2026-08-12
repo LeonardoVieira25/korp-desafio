@@ -60,12 +60,16 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
+      - grafana-data:/var/lib/grafana
       - ../monitoring/grafana/provisioning/:/etc/grafana/provisioning/:ro
-      - ../monitoring/grafana/dashboards/:/var/lib/grafana/dashboards:ro
+      - ../monitoring/grafana/dashboards/:/etc/grafana/dashboards:ro
     networks:
       - korp-network
     depends_on:
       - prometheus
+
+volumes:
+  grafana-data:
 
 networks:
   korp-network:

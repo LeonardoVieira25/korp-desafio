@@ -1,0 +1,73 @@
+---
+# Setup: Instalação do Docker em ambiente Linux (Debian/Ubuntu) e criação
+# da rede Docker.
+#
+# Uso:
+#   ansible-playbook -i inventory.ini playbooks/setup.yml
+
+- name: "Setup — Docker e rede"
+  hosts: korp_servers
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Instala os pré-requisitos do Docker
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+          - rsync # usado pelo ansible.posix.synchronize na etapa de deploy
+        state: present
+        update_cache: true
+
+    - name: Cria o diretório de keyrings do APT
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Baixa a chave GPG oficial do Docker (ASCII-armored)
+      ansible.builtin.get_url:
+        url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+
+    - name: Adiciona o repositório APT do Docker
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ docker_arch }} signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/{{ ansible_distribution | lower }}
+          {{ ansible_distribution_release }} stable
+        state: present
+        update_cache: true
+
+    - name: Instala o Docker Engine e o plugin docker compose
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: true
+
+    - name: Garante que o serviço Docker esteja ativo e habilitado
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Adiciona o usuário de conexão ao grupo docker
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: true
+      when: ansible_user is defined and ansible_user != 'root'
+
+    - name: Cria a rede Docker {{ docker_network_name }}
+      community.docker.docker_network:
+        name: "{{ docker_network_name }}"
+        driver: "{{ docker_network_driver }}"
+        state: present

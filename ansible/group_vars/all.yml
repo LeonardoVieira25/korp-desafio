@@ -1,0 +1,28 @@
+---
+local_project_dir: "{{ playbook_dir }}/../.."
+
+ansible_private_key_file: "{{ local_project_dir }}/keys/.hetzner.key"
+
+remote_project_dir: /opt/korp-desafio
+
+docker_network_name: korp-network
+docker_network_driver: bridge
+
+http_image_name: go-server
+http_image_tag: latest
+
+http_service_url: http://localhost/projeto-korp
+grafana_url: http://localhost:3000
+
+stack_containers:
+  - http-server-projeto-korp
+  - nginx
+  - nginx-exporter
+  - blackbox-exporter
+  - prometheus
+  - grafana
+
+# Arquitetura do host -> sufixo de arquitetura dos pacotes Docker.
+docker_arch: >-
+  {{ 'amd64' if ansible_architecture == 'x86_64'
+     else ('arm64' if ansible_architecture == 'aarch64' else ansible_architecture) }}

@@ -1,0 +1,93 @@
+---
+# Deploy: Envio dos arquivos do projeto, build da imagem, criação e execução
+# dos containers via docker compose (a configuração do NGINX e do
+# monitoramento é montada por volume) e validação do serviço via requisição
+# HTTP, com exibição da resposta no console.
+#
+# Uso:
+#   ansible-playbook -i inventory.ini playbooks/deploy.yml
+
+- name: "Deploy: arquivos, build, containers e validação"
+  hosts: korp_servers
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Cria o diretório do projeto no host remoto
+      ansible.builtin.file:
+        path: "{{ remote_project_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Sincroniza os arquivos do projeto para o host remoto
+      ansible.posix.synchronize:
+        src: "{{ local_project_dir }}/{{ item.src }}/"
+        dest: "{{ remote_project_dir }}/{{ item.dest }}/"
+        delete: true
+        rsync_opts:
+          - "--exclude=.git"
+          - "--exclude=*.tfstate*"
+      loop:
+        - { src: "docker", dest: "docker" }
+        - { src: "nginx-config", dest: "nginx-config" }
+        - { src: "monitoring", dest: "monitoring" }
+        - { src: "http-service", dest: "http-service" }
+
+    - name: Build da imagem {{ http_image_name }}:{{ http_image_tag }}
+      community.docker.docker_image:
+        name: "{{ http_image_name }}"
+        tag: "{{ http_image_tag }}"
+        source: build
+        force_source: true
+        build:
+          path: "{{ remote_project_dir }}/http-service"
+          dockerfile: "{{ remote_project_dir }}/docker/Dockerfile"
+      register: build_result
+
+    - name: Exibe o resultado do build
+      ansible.builtin.debug:
+        msg: "Imagem {{ http_image_name }}:{{ http_image_tag }} construída -> {{ build_result.image.Id | default('OK') }}"
+
+    - name: Cria e executa os containers via docker compose
+      community.docker.docker_compose_v2:
+        project_src: "{{ remote_project_dir }}/docker"
+        project_name: korp-desafio
+        files:
+          - compose.yml
+        state: present
+
+    - name: Aguarda todos os containers da stack ficarem em execução
+      community.docker.docker_container_info:
+        name: "{{ item }}"
+      register: container_info
+      until: >-
+        container_info.container is not none
+        and container_info.container.State.Running
+      retries: 20
+      delay: 3
+      loop: "{{ stack_containers }}"
+
+    - name: Realiza requisição HTTP ao serviço (através do proxy NGINX)
+      ansible.builtin.uri:
+        url: "{{ http_service_url }}"
+        method: GET
+        status_code: 200
+        return_content: true
+      register: http_response
+      until: http_response.status == 200
+      retries: 20
+      delay: 3
+
+    - name: Exibe a resposta HTTP no console
+      ansible.builtin.debug:
+        msg: |
+          {{ http_service_url }} -> {{ http_response.status }} {{ http_response.content }}
+
+    - name: Lista os containers da stack em execução
+      ansible.builtin.command: docker ps
+      register: docker_ps_output
+      changed_when: false
+
+    - name: Exibe a listagem dos containers
+      ansible.builtin.debug:
+        var: docker_ps_output.stdout_lines
